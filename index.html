@@ -92,20 +92,24 @@
         const workContainer = document.getElementById('workContainer');
         const errorMessage = document.getElementById('errorMessage');
         let imageCount = 1;
-        let loadErrorCount = 0;
-        const maxErrorCount = 3; // 连续加载失败3次则停止尝试
+        const maxConsecutiveErrors = 1; // 连续1次加载失败就停止（删除图片后立即生效）
+        let consecutiveErrors = 0;
+        const imageLoadTimeout = 3000; // 图片加载超时时间：3秒
 
-        // 加载图片函数
+        // 加载图片函数（添加防缓存参数）
         function loadImage() {
-            // 尝试加载png和jpg两种格式
-            const pngUrl = `images/work${imageCount}.png`;
-            const jpgUrl = `images/work${imageCount}.jpg`;
+            // 每次加载都添加时间戳参数，禁用浏览器缓存
+            const timestamp = new Date().getTime();
+            const pngUrl = `images/work${imageCount}.png?v=${timestamp}`;
+            const jpgUrl = `images/work${imageCount}.jpg?v=${timestamp}`;
             
             const img = new Image();
-            
+            let timeoutTimer; // 超时计时器
+
             // 图片加载成功处理
             img.onload = () => {
-                loadErrorCount = 0; // 重置错误计数
+                clearTimeout(timeoutTimer); // 清除超时计时器
+                consecutiveErrors = 0; // 重置连续错误计数
                 img.classList.add('work-image');
                 workContainer.appendChild(img);
                 imageCount++;
@@ -114,14 +118,15 @@
 
             // 图片加载失败处理
             img.onerror = () => {
+                clearTimeout(timeoutTimer); // 清除超时计时器
                 // 先尝试jpg格式
-                if (img.src === pngUrl) {
-                    img.src = jpgUrl;
+                if (img.src.includes('.png')) {
+                    img.src = jpgUrl; // 切换到jpg格式重试
                 } else {
-                    // 两种格式都失败
-                    loadErrorCount++;
-                    if (loadErrorCount >= maxErrorCount) {
-                        // 连续失败3次，停止加载（没有更多图片）
+                    // 两种格式都失败，累计错误次数
+                    consecutiveErrors++;
+                    if (consecutiveErrors >= maxConsecutiveErrors) {
+                        // 连续失败1次，停止加载（说明该序号图片已删除或不存在）
                         return;
                     }
                     imageCount++;
@@ -129,13 +134,23 @@
                 }
             };
 
+            // 图片加载超时处理
+            img.ontimeout = () => {
+                clearTimeout(timeoutTimer);
+                errorMessage.style.display = 'block';
+            };
+
             // 监听网络错误
             img.addEventListener('error', (e) => {
-                // 只有当是网络错误时才显示提示
                 if (e.type === 'error' && !img.complete) {
                     errorMessage.style.display = 'block';
                 }
             });
+
+            // 设置加载超时
+            timeoutTimer = setTimeout(() => {
+                img.onerror(); // 超时视为加载失败
+            }, imageLoadTimeout);
 
             // 开始加载png格式
             img.src = pngUrl;
@@ -154,6 +169,12 @@
             if (e.target.tagName === 'IMG') {
                 e.preventDefault();
             }
+        });
+
+        // 禁止浏览器缓存页面（可选，增强防缓存效果）
+        window.addEventListener('beforeunload', () => {
+            // 清除页面缓存
+            window.location.reload(true);
         });
     </script>
 </body>
