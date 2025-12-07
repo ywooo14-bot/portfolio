@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -130,6 +131,19 @@
             background-color: rgba(255, 255, 255, 0.3);
         }
         
+        /* 加载完成提示 */
+        .loading-complete {
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            display: none;
+        }
+        
+        .loading-complete.show {
+            display: block;
+        }
+        
         /* 桌面端样式 */
         @media (min-width: 768px) {
             .image-container {
@@ -141,6 +155,11 @@
 <body>
     <!-- 图片容器 -->
     <div class="image-container" id="imageContainer"></div>
+    
+    <!-- 加载完成提示 -->
+    <div class="loading-complete" id="loadingComplete">
+        所有作品已加载完成
+    </div>
     
     <!-- 错误提示容器 -->
     <div class="error-container" id="errorContainer">
@@ -170,8 +189,10 @@
         function disableImageDownload() {
             // 禁用右键菜单
             document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                return false;
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    return false;
+                }
             }, false);
             
             // 禁用拖拽
@@ -189,60 +210,99 @@
                     return false;
                 }
             }, false);
+            
+            // 禁用图片拖拽保存（Chrome等浏览器的特性）
+            document.addEventListener('mousedown', function(e) {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                }
+            }, false);
         }
         
         // 加载所有图片
         async function loadAllImages() {
             const imageContainer = document.getElementById('imageContainer');
             const errorContainer = document.getElementById('errorContainer');
+            const loadingComplete = document.getElementById('loadingComplete');
             let imageIndex = 1;
             let hasError = false;
+            let loadedImages = 0;
+            let totalImages = 0;
             
-            // 尝试加载图片，直到找不到为止
-            while (true) {
-                const imageUrl = `images/work${imageIndex}.png`;
+            // 首先探测图片总数
+            const imageCount = await detectImageCount();
+            
+            // 如果没有找到任何图片
+            if (imageCount === 0) {
+                showError();
+                return;
+            }
+            
+            totalImages = imageCount;
+            
+            // 加载所有图片
+            for (let i = 1; i <= totalImages; i++) {
+                const imageUrl = `images/work${i}.png`;
                 
                 try {
-                    // 检查图片是否存在
-                    const exists = await checkImageExists(imageUrl);
-                    
-                    if (!exists) {
-                        // 如果第一张图片就不存在，显示错误
-                        if (imageIndex === 1) {
-                            throw new Error('没有找到图片');
-                        }
-                        // 否则停止加载（已经加载完所有图片）
-                        break;
-                    }
-                    
                     // 创建图片元素
                     const imageItem = document.createElement('div');
                     imageItem.className = 'image-item';
+                    imageItem.id = `image-item-${i}`;
                     
                     // 创建骨架图
                     const skeleton = document.createElement('div');
                     skeleton.className = 'skeleton';
+                    skeleton.id = `skeleton-${i}`;
                     imageItem.appendChild(skeleton);
                     
                     // 创建图片
                     const img = document.createElement('img');
-                    img.alt = `作品 ${imageIndex}`;
-                    img.loading = 'eager'; // 优先加载，提升加载速度
+                    img.alt = `作品 ${i}`;
+                    img.id = `work-${i}`;
+                    
+                    // 使用更快的加载方式
+                    img.loading = 'eager';
+                    img.decoding = 'async';
                     
                     // 图片加载成功
                     img.onload = function() {
                         img.classList.add('loaded');
                         skeleton.classList.add('hidden');
+                        loadedImages++;
+                        
+                        // 检查是否所有图片都加载完成
+                        if (loadedImages === totalImages) {
+                            loadingComplete.classList.add('show');
+                        }
                     };
                     
                     // 图片加载失败
                     img.onerror = function() {
-                        // 如果是第一张图片失败，显示错误提示
-                        if (imageIndex === 1) {
-                            showError();
+                        // 隐藏该图片的骨架屏
+                        skeleton.classList.add('hidden');
+                        
+                        // 创建一个占位提示
+                        const errorPlaceholder = document.createElement('div');
+                        errorPlaceholder.className = 'error-placeholder';
+                        errorPlaceholder.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255,255,255,0.5);">图片 work${i}.png 加载失败</div>`;
+                        
+                        // 用占位提示替换骨架屏
+                        skeleton.parentNode.replaceChild(errorPlaceholder, skeleton);
+                        
+                        // 记录已加载（包括失败的）
+                        loadedImages++;
+                        
+                        // 检查是否所有图片都处理完成
+                        if (loadedImages === totalImages) {
+                            loadingComplete.classList.add('show');
                         }
-                        // 否则只移除当前图片项
-                        imageContainer.removeChild(imageItem);
+                        
+                        // 如果第一张图片就失败，显示全局错误提示
+                        if (i === 1 && !hasError) {
+                            showError();
+                            hasError = true;
+                        }
                     };
                     
                     // 开始加载图片（设置src触发加载）
@@ -252,25 +312,40 @@
                     imageItem.appendChild(img);
                     imageContainer.appendChild(imageItem);
                     
-                    imageIndex++;
-                    
-                    // 稍微延迟一下，避免同时加载过多图片
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                    
                 } catch (error) {
                     console.error('加载图片时出错:', error);
-                    showError();
-                    break;
+                    if (i === 1 && !hasError) {
+                        showError();
+                        hasError = true;
+                    }
                 }
             }
             
             // 显示错误提示
             function showError() {
-                if (!hasError) {
-                    errorContainer.classList.add('show');
-                    hasError = true;
+                errorContainer.classList.add('show');
+            }
+        }
+        
+        // 探测图片数量
+        async function detectImageCount() {
+            let count = 0;
+            let index = 1;
+            
+            // 最多尝试100张图片
+            while (index <= 100) {
+                const imageUrl = `images/work${index}.png`;
+                const exists = await checkImageExists(imageUrl);
+                
+                if (exists) {
+                    count++;
+                    index++;
+                } else {
+                    break;
                 }
             }
+            
+            return count;
         }
         
         // 检查图片是否存在
@@ -288,7 +363,7 @@
                 // 设置超时，避免长时间等待
                 setTimeout(() => {
                     resolve(false);
-                }, 2000);
+                }, 1500);
             });
         }
     </script>
