@@ -5,297 +5,286 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>作品集</title>
 
-  <!-- favicon（来自 favicon_io 文件夹）-->
+  <!-- favicon（根据你提供的 favicon_io 文件夹）-->
   <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
   <link rel="manifest" href="favicon_io/site.webmanifest">
   <meta name="theme-color" content="#1C1C1C">
-  
-  <style>
-    /* 页面整体 */
-    :root {
-      --bg: #1C1C1C;
-      --skeleton: rgba(255,255,255,0.20); /* 白色 20% */
-      --white: #FFFFFF;
-    }
-    html,body{
-      height:100%;
-      margin:0;
-      padding:0;
-      background:var(--bg);
-      color:var(--white);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
 
-    /* 内容容器：顶部内边距 60px，居中 */
-    .wrap{
-      padding-top:60px; /* 你要求的顶部间距 */
+  <style>
+    /* 基本布局 */
+    :root{ --bg:#1C1C1C; --white:#FFFFFF; --skeleton: rgba(255,255,255,0.2); }
+    html,body{ height:100%; margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--white); -webkit-font-smoothing:antialiased; }
+    .page {
+      padding-top:60px; /* 需求：内容区顶部60间距 */
+      min-height:100vh;
+      box-sizing:border-box;
       display:flex;
       justify-content:center;
+      align-items:flex-start;
+    }
+
+    /* 中央容器：在电脑上占 65% 宽度，最大 1200px；手机上则 100%（由 max-width 规则控制） */
+    .container {
+      width:65vw;
+      max-width:1200px;
+      min-width:300px;
       box-sizing:border-box;
-      min-height:100%;
+    }
+    @media (max-width:800px){
+      .container{ width:100vw; padding:0 0; }
     }
 
-    /* 内容区宽度规则：手机 100%，桌面 65% 最大 1200px */
-    .content {
+    /* 图片列：无间距 */
+    .gallery{ display:block; margin:0; padding:0; }
+    .item{ margin:0; padding:0; position:relative; overflow:hidden; }
+
+    /* skeleton（占位）：高度 1080px，Fill 白色 20% */
+    .skeleton{
       width:100%;
+      height:1080px; /* 需求：高度1080 */
+      background:var(--skeleton);
+      display:block;
       box-sizing:border-box;
-      margin:0;
-    }
-    @media (min-width: 768px) {
-      .content {
-        width:65vw;             /* 65% 窗口宽度 */
-        max-width:1200px;      /* 最大 1200px */
-      }
     }
 
-    /* 每张图一项（无间距）*/
-    .item {
-      width:100%;
-      margin:0;
-      padding:0;
-      overflow:hidden;
-      position:relative;
-      line-height:0; /* 去掉空隙 */
-    }
-
-    /* 图片样式：宽度 100%，高度自适应（宽度一致，高度不定） */
-    .item img {
+    /* 图片：宽度 100%，无间隙，Fill */
+    .gallery img{
       display:block;
       width:100%;
       height:auto;
-      object-fit:cover; /* 尽量填充宽度 */
+      object-fit:cover; /* Fill 效果 */
+      vertical-align:middle;
+      margin:0;
+      padding:0;
+      border:0;
+      -webkit-user-drag: none; /* 禁止拖动 */
       user-select:none;
-      -webkit-user-drag: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
     }
 
-    /* 骨架占位：宽度与图片一致，高度 1080 px，Fill（填充）*/
-    .skeleton {
-      width:100%;
-      height:1080px; /* 要求固定高度 1080 */
-      background: var(--skeleton);
-      display:block;
-      box-sizing:border-box;
+    /* 加载过渡淡入 */
+    img.fade-in{
+      transition:opacity 360ms ease;
+      opacity:1;
+    }
+    img.loading{
+      opacity:0;
     }
 
-    /* 网络异常 overlay */
+    /* 遮罩层（网络异常） */
     .overlay {
       position:fixed;
-      inset:0;
-      display:none; /* 默认隐藏 */
+      left:0; top:0; right:0; bottom:0;
+      display:flex;
       justify-content:center;
       align-items:center;
-      z-index:9999;
       background: rgba(0,0,0,0.6);
-    }
-    .overlay .box {
-      text-align:center;
+      z-index:9999;
       color:var(--white);
+      text-align:center;
+      padding:20px;
+      box-sizing:border-box;
+      display:none; /* 默认隐藏，出现时 display:flex */
+      flex-direction:column;
     }
-    .overlay p {
-      margin:0 0 20px 0;
-      font-size:16px;
-    }
-    .reload-btn {
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:96px;
-      height:36px;
-      background:var(--white);
-      color:var(--bg);
-      border-radius:4px;
-      font-size:14px;
-      cursor:pointer;
+    .overlay.show { display:flex; }
+
+    .overlay h2{ margin:0 0 20px 0; font-size:20px; font-weight:600; color:var(--white); }
+    .reload-btn{
+      width:96px; height:36px;
+      font-size:14px; color:var(--white);
+      background: var(--skeleton); /* Fill 白色 20% */
       border:0;
+      border-radius:4px;
+      cursor:pointer;
     }
 
-    /* 禁用图片右键菜单（兼容性） */
-    img, .item {
-      -webkit-touch-callout: none; /* iOS Safari */
+    /* 为防止右键/拖拽，给图片加一个透明层捕获事件（仍可滚动） */
+    .blocker {
+      position:absolute; left:0; top:0; right:0; bottom:0;
+      z-index:2;
     }
 
-    /* 小屏时图片占满屏幕宽度（wrap 和 content 已处理） */
-    @media (max-width: 767px) {
-      .skeleton { height:1080px; } /* 保持骨架高度需求 */
-    }
-
-    /* 去掉任何默认的间距/边框等 */
-    * { box-sizing:border-box; }
+    /* 辅助：页面底部留白，避免最后一张靠边太紧 */
+    .spacer{ height:60px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <main class="content" id="gallery" aria-live="polite">
-      <!-- JS 会动态注入图片项（skeleton + img） -->
+  <div class="page">
+    <main class="container" id="mainContainer">
+      <section class="gallery" id="gallery" aria-live="polite"></section>
+      <div class="spacer"></div>
     </main>
   </div>
 
-  <!-- 网络异常覆盖层 -->
-  <div id="networkOverlay" class="overlay" role="alert" aria-hidden="true">
-    <div class="box">
-      <p>网络异常，请重新加载</p>
-      <button id="reloadBtn" class="reload-btn">重新加载</button>
-    </div>
+  <!-- 网络异常覆盖 -->
+  <div class="overlay" id="overlay">
+    <h2>网络异常，请重新加载</h2>
+    <button class="reload-btn" id="reloadBtn">重新加载</button>
   </div>
 
   <script>
     /***********************
-     * 配置区（若需修改）
+     * 配置区（小白也能看懂）
      ***********************/
-    const basePath = './images/';         // images 文件夹（相对路径）
-    const namePrefix = 'work';            // 文件名前缀 'work' -> work1.png
-    const fileExt = '.png';               // 扩展名（.png/.jpg）
-    const maxScan = 100;                  // 最大扫描数量，防止无限循环（不要改太小）
-    /*************************************************
-     * 加载逻辑说明（已实现）：
-     * - 按顺序尝试加载 work1..workN，若遇到连续 3 个不存在，则认为到末尾停止（减小 404 请求）
-     * - 每个图片项先渲染 skeleton（高度 1080），图片用 data-src，使用 IntersectionObserver 懒加载
-     * - 网络异常检测：如果 navigator.onLine 为 false，或首张图片加载 error（非 404）时显示 overlay
-     *************************************************/
+    const MAX_TRY = 50; // 最多尝试检测 work1 .. work50（你可以改这个数字）
+    const BASE_PATH = 'images/'; // images 文件夹路径（若你改名需同步修改）
+    const PREFIX = 'work';         // 文件名前缀（work）
+    const EXT = '.png';           // 扩展名（png）。如果以后是 jpg，可改成 '.jpg' 或做多个扩展判断
+
+    // 连续未找到的阈值：如果连续 X 张图不存在就停止检测（避免一直探测空白编号）
+    const STOP_IF_MISSING_IN_ROW = 5;
 
     const gallery = document.getElementById('gallery');
-    const overlay = document.getElementById('networkOverlay');
+    const overlay = document.getElementById('overlay');
     const reloadBtn = document.getElementById('reloadBtn');
 
-    reloadBtn.addEventListener('click', () => {
-      location.reload();
-    });
+    // 点击重新加载按钮
+    reloadBtn.addEventListener('click', () => location.reload());
 
-    // 监听在线/离线
-    window.addEventListener('offline', () => showNetworkOverlay());
-    window.addEventListener('online', () => {
-      hideNetworkOverlay();
-    });
+    // 在页面上禁止右键菜单（整体）
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
 
-    function showNetworkOverlay(){
-      overlay.style.display = 'flex';
-      overlay.setAttribute('aria-hidden', 'false');
-    }
-    function hideNetworkOverlay(){
-      overlay.style.display = 'none';
-      overlay.setAttribute('aria-hidden', 'true');
-    }
-
-    // 防止页面内图片右键、拖拽
-    document.addEventListener('contextmenu', function(e){
-      if (e.target && e.target.tagName === 'IMG') {
-        e.preventDefault();
+    // 改善体验：如果浏览器检测到离线，直接弹提示
+    function checkOnline() {
+      if (!navigator.onLine) {
+        showOverlay();
+        return false;
       }
-    });
-    document.addEventListener('dragstart', function(e){
-      if (e.target && e.target.tagName === 'IMG') e.preventDefault();
-    });
+      return true;
+    }
 
-    // 尝试按序检测文件是否存在，但避免浪费：连续错误计数机制
-    async function probeSequentialImages() {
-      const list = [];
-      let consecutiveMissing = 0;
-      for (let i = 1; i <= maxScan; i++) {
-        const url = basePath + namePrefix + i + fileExt;
-        try {
-          // 使用 HEAD 请求先探测（fetch HEAD）以避免完整下载
-          const res = await fetch(url, { method: 'HEAD' });
-          if (res.ok) {
-            list.push({index:i, url});
-            consecutiveMissing = 0;
-          } else {
-            // 404 或其它状态
-            consecutiveMissing++;
-            if (consecutiveMissing >= 3) break; // 连续 3 个不存在就停止（可以减少无意义请求）
+    function showOverlay(){
+      overlay.classList.add('show');
+    }
+    function hideOverlay(){
+      overlay.classList.remove('show');
+    }
+
+    // 主流程：自动探测图片（按 work1,work2,... 顺序）
+    async function discoverAndRender() {
+      if (!checkOnline()) return;
+
+      let missingInRow = 0;
+      let foundAny = false;
+
+      // 我们不会一次性把所有图片都加载（对性能不友好）：先创建占位 skeleton 与 img(data-src)，真正加载由 IntersectionObserver 触发（懒加载）
+      for (let i=1;i<=MAX_TRY;i++){
+        const filename = PREFIX + i + EXT;
+        const url = BASE_PATH + filename;
+
+        // 尝试请求资源头部，确认是否存在 —— 为了兼容更多 host，我们改为使用 Image() 的 onload/onerror 测试（更稳）
+        const imgTest = new Image();
+        // Use a promise to await test result
+        const exists = await new Promise(resolve => {
+          imgTest.onload = () => resolve(true);
+          imgTest.onerror = () => resolve(false);
+          // 这里只开始加载图片的最小体积头部，但浏览器会完整请求图片；这用于“探测是否存在”
+          imgTest.src = url + '?_t=' + Date.now(); // 加时间戳避免缓存误判
+        });
+
+        if (exists) {
+          missingInRow = 0;
+          foundAny = true;
+          // 创建占位 + img 元素（懒加载）
+          const item = document.createElement('div');
+          item.className = 'item';
+          // skeleton 占位
+          const sk = document.createElement('div');
+          sk.className = 'skeleton';
+          item.appendChild(sk);
+
+          // img 元素：真实 src 放到 data-src，交给 IntersectionObserver 加载
+          const img = document.createElement('img');
+          img.dataset.src = url;
+          img.alt = '作品 ' + i;
+          img.className = 'loading';
+          img.setAttribute('draggable','false');
+          // 当图片真正加载完成：移除 skeleton，淡入
+          img.onload = () => {
+            img.classList.remove('loading');
+            img.classList.add('fade-in');
+            if (img.previousElementSibling && img.previousElementSibling.classList.contains('skeleton')) {
+              img.previousElementSibling.remove();
+            }
+          };
+          // 如果加载失败：保留 skeleton（用户可点击刷新）
+          img.onerror = () => {
+            img.remove(); // 如果某些时候加载失败，移除该 img（占位已经存在）
+            // 作为次优策略：如果很多图都加载失败，提示网络异常
+          };
+
+          // 为阻止右键/拖拽，我们在 img 上放一个透明捕获层
+          const blocker = document.createElement('div');
+          blocker.className = 'blocker';
+          // 阻止所有鼠标事件（但是允许滚动穿过）
+          blocker.addEventListener('contextmenu', e => e.preventDefault());
+          blocker.addEventListener('mousedown', e => e.preventDefault());
+          blocker.addEventListener('dragstart', e => e.preventDefault());
+
+          item.appendChild(img);
+          item.appendChild(blocker);
+          gallery.appendChild(item);
+        } else {
+          missingInRow++;
+          if (missingInRow >= STOP_IF_MISSING_IN_ROW) {
+            break; // 连续 N 张都没找到，停止后续探测
           }
-        } catch (err) {
-          // 网络错误（如离线、DNS 等）
-          // 直接显示网络异常提示并停止列举
-          console.error('probe error', err);
-          showNetworkOverlay();
-          return list;
         }
-      }
-      return list;
-    }
+      } // end for
 
-    // 渲染占位并设置懒加载
-    function renderList(items) {
-      if (items.length === 0) {
-        // 没有图片时展示空提示（可自定义）
-        const p = document.createElement('p');
-        p.textContent = '没有图片，请将 images/work1.png 等文件上传到 images 文件夹';
-        gallery.appendChild(p);
+      // 如果没找到任何图片，显示网络异常/或空白提示
+      if (!foundAny) {
+        showOverlay();
         return;
       }
 
-      // IntersectionObserver for lazy loading images
-      const io = new IntersectionObserver((entries, observer) => {
+      // 设置懒加载：IntersectionObserver
+      const imgs = document.querySelectorAll('img[data-src]');
+      const observerOptions = {
+        root: null,
+        rootMargin: '300px', // 预加载：在进入视口前 300px 开始加载，提高体验
+        threshold: 0
+      };
+      const io = new IntersectionObserver((entries, ob) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            const img = entry.target.querySelector('img[data-src]');
-            if (img) {
-              const src = img.dataset.src;
-              // 开始加载真实图片
-              img.src = src;
-              img.onload = () => {
-                // 图片加载完后移除 skeleton（通过隐藏 skeleton 节点）
-                const sk = entry.target.querySelector('.skeleton');
-                if (sk) sk.remove();
-              };
-              img.onerror = (e) => {
-                // 如果图片 404，移除该项的 skeleton 并隐藏图片区域
-                const sk = entry.target.querySelector('.skeleton');
-                if (sk) sk.style.background = 'transparent';
-                console.error('image load error', src, e);
-                // 如果明显是网络问题（navigator.offline）显示 overlay
-                if (!navigator.onLine) showNetworkOverlay();
-              };
-              img.removeAttribute('data-src');
-            }
-            observer.unobserve(entry.target);
+            const el = entry.target;
+            el.src = el.dataset.src;
+            ob.unobserve(el);
           }
         });
-      }, { root: null, rootMargin: '200px', threshold: 0.01 });
+      }, observerOptions);
 
-      // 按索引顺序渲染（items 已经是顺序）
-      items.forEach(item => {
-        const wrap = document.createElement('figure');
-        wrap.className = 'item';
+      imgs.forEach(img => io.observe(img));
 
-        const sk = document.createElement('div');
-        sk.className = 'skeleton';
-        wrap.appendChild(sk);
-
-        const img = document.createElement('img');
-        img.setAttribute('data-src', item.url);
-        img.alt = `work${item.index}`;
-        img.setAttribute('draggable', 'false');
-        img.setAttribute('loading', 'lazy'); // 双重保险：原生懒加载 + IntersectionObserver
-        // 禁用上下文菜单、选择
-        img.oncontextmenu = (e) => e.preventDefault();
-        img.onmousedown = (e) => { e.preventDefault(); return false; };
-
-        wrap.appendChild(img);
-        gallery.appendChild(wrap);
-
-        io.observe(wrap);
-      });
+      // 监测加载错误率：如果大量图片出错，则提示网络异常。策略：5 秒后统计加载成功的 img 数量
+      setTimeout(() => {
+        const total = document.querySelectorAll('.item').length;
+        const loaded = document.querySelectorAll('img.fade-in').length;
+        // 如果加载成功比例小于 30% ，则提示网络问题
+        if (total>0 && loaded/total < 0.3) {
+          showOverlay();
+        } else {
+          hideOverlay();
+        }
+      }, 5000);
     }
 
-    // 主流程
-    (async function main(){
-      // 先探测图片列表
-      const items = await probeSequentialImages();
-      renderList(items);
-
-      // 如果探测时发现 navigator.offline 就立即提示
-      if (!navigator.onLine) {
-        showNetworkOverlay();
-      }
+    // 初始化
+    (function init(){
+      discoverAndRender().catch(err=>{
+        console.error(err);
+        showOverlay();
+      });
     })();
+
+    // 额外提示：当离线状态改变时自动刷新或显示 overlay
+    window.addEventListener('offline', showOverlay);
+    window.addEventListener('online', () => {
+      hideOverlay();
+    });
 
   </script>
 </body>
