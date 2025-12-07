@@ -115,7 +115,7 @@
             height: 36px;
             font-size: 14px;
             cursor: pointer;
-            border-radius: 2px;
+            border-radius: 6px;
             transition: background-color 0.3s;
         }
         
@@ -138,7 +138,7 @@
     
     <div class="container">
         <div class="portfolio" id="portfolio">
-            <!-- 骨架屏和图片将在这里显示 -->
+            <!-- 图片将在这里显示 -->
         </div>
     </div>
 
@@ -159,12 +159,6 @@
         const networkErrorElement = document.getElementById('networkError');
         const portfolioElement = document.getElementById('portfolio');
         const retryBtn = document.getElementById('retryBtn');
-        
-        // 配置选项
-        const config = {
-            loadDelay: 500,        // 图片加载间隔(毫秒)
-            skeletonHeight: 1080   // 骨架屏高度
-        };
         
         // 创建骨架屏占位符
         function createSkeletons() {
@@ -193,114 +187,91 @@
             });
         }
         
-        // 图片加载函数 - 实现逐张加载
-        function loadImagesSequentially() {
+        // 并行加载所有图片
+        function loadImagesInParallel() {
             const totalImages = imagePaths.length;
+            let loadedCount = 0;
             
             if (totalImages === 0) {
                 showError('没有配置图片路径');
                 return;
             }
             
-            // 先创建骨架屏占位符
+            // 创建骨架屏占位符
             createSkeletons();
             
-            // 开始逐张加载图片
-            loadNextImage(0, totalImages);
-        }
-        
-        // 递归函数：逐张加载图片
-        function loadNextImage(currentIndex, totalImages) {
-            if (currentIndex >= totalImages) {
-                // 所有图片加载完成
-                console.log('所有图片加载完成');
-                return;
-            }
-            
-            const path = imagePaths[currentIndex];
-            const imgElement = document.querySelector(`#item-${currentIndex} img`);
-            const skeletonElement = document.getElementById(`skeleton-${currentIndex}`);
-            
-            // 创建新的Image对象进行预加载
-            const img = new Image();
-            
-            img.onload = () => {
-                console.log(`图片 ${currentIndex + 1} 加载成功: ${path}`);
+            imagePaths.forEach((path, index) => {
+                const imgElement = document.querySelector(`#item-${index} img`);
+                const skeletonElement = document.getElementById(`skeleton-${index}`);
                 
-                // 图片加载完成后，隐藏骨架屏，显示图片
-                setTimeout(() => {
-                    if (skeletonElement) {
-                        skeletonElement.style.display = 'none';
-                    }
+                const img = new Image();
+                
+                img.onload = () => {
+                    loadedCount++;
+                    console.log(`图片 ${index + 1} 加载成功: ${path}`);
                     
-                    imgElement.classList.add('loaded');
-                    
-                    // 加载下一张图片
+                    // 隐藏骨架屏，显示图片
                     setTimeout(() => {
-                        loadNextImage(currentIndex + 1, totalImages);
-                    }, config.loadDelay);
-                }, 300);
-            };
-            
-            img.onerror = () => {
-                console.error(`图片加载失败: ${path}`);
+                        if (skeletonElement) {
+                            skeletonElement.style.display = 'none';
+                        }
+                        imgElement.classList.add('loaded');
+                    }, 300);
+                };
                 
-                // 标记加载失败，但继续加载其他图片
-                if (skeletonElement) {
-                    skeletonElement.textContent = '加载失败';
-                    skeletonElement.classList.add('error');
-                }
+                img.onerror = () => {
+                    console.error(`图片加载失败: ${path}`);
+                    
+                    if (skeletonElement) {
+                        skeletonElement.textContent = '加载失败';
+                        skeletonElement.classList.add('error');
+                    }
+                };
                 
-                // 继续加载下一张图片
-                setTimeout(() => {
-                    loadNextImage(currentIndex + 1, totalImages);
-                }, config.loadDelay);
-            };
-            
-            // 开始加载图片
-            img.src = path;
+                img.src = path;
+            });
         }
         
         // 显示网络错误
-        function showNetworkError() {
+        function showError(message) {
             networkErrorElement.style.display = 'flex';
         }
         
         // 隐藏网络错误
-        function hideNetworkError() {
+        function hideError() {
             networkErrorElement.style.display = 'none';
         }
         
         // 重试按钮事件
         retryBtn.addEventListener('click', () => {
-            hideNetworkError();
+            hideError();
             portfolioElement.innerHTML = '';
             
             // 延迟一下再开始加载，让用户看到变化
             setTimeout(() => {
-                loadImagesSequentially();
+                loadImagesInParallel();
             }, 500);
         });
         
         // 添加网络状态检测
         window.addEventListener('online', () => {
             console.log('网络连接恢复');
-            hideNetworkError();
+            hideError();
         });
         
         window.addEventListener('offline', () => {
             console.log('网络连接断开');
-            showNetworkError();
+            showError('网络连接已断开，请检查网络设置');
         });
         
         // 页面加载完成后开始加载图片
         window.addEventListener('DOMContentLoaded', () => {
             // 检查网络状态
             if (!navigator.onLine) {
-                showNetworkError();
+                showError('网络连接已断开，请检查网络设置');
             } else {
-                // 直接开始加载图片，显示骨架屏
-                loadImagesSequentially();
+                // 直接加载图片
+                loadImagesInParallel();
             }
         });
     </script>
