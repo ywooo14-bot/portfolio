@@ -84,11 +84,6 @@
     </div>
 
     <script>
-        // 页面加载完成后滚动到顶部
-        window.addEventListener('load', () => {
-            window.scrollTo(0, 0);
-        });
-
         const workContainer = document.getElementById('workContainer');
         const errorMessage = document.getElementById('errorMessage');
         let imageCount = 1;
@@ -96,6 +91,15 @@
         let consecutiveErrors = 0;
         const imageLoadTimeout = 3000; // 图片加载超时时间：3秒
         let hasLoadedAtLeastOneImage = false; // 标记是否已经加载到至少一张图片
+        let isInitialLoad = true; // 标记是否是页面初始加载（只在初始加载时滚动到顶部）
+
+        // 页面初始加载完成后滚动到顶部（只执行一次）
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isInitialLoad) {
+                window.scrollTo(0, 0);
+                isInitialLoad = false; // 执行后标记为非初始加载
+            }
+        });
 
         // 加载图片函数（添加防缓存参数）
         function loadImage() {
