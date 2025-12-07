@@ -17,207 +17,71 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
-    <style>
-        /* 基础样式 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+   <style>
+            imgElement.onload = function() {
+                // 确保图片完全加载后再显示
+            };
         }
         
-        body {
-            background-color: #1C1C1C;
-            padding-top: 60px;
-            font-family: Arial, sans-serif;
-            color: #FFFFFF;
-        }
-        
-        .container {
-            max-width: 1200px;
-            width: 65%;
-            margin: 0 auto;
-        }
-        
-        /* 图片容器样式 */
-        .image-container {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .image-item {
-            width: 100%;
-            margin-bottom: 0;
-            position: relative;
-        }
-        
-        .image-item img {
-            width: 100%;
-            height: auto;
-            display: block;
-            pointer-events: none;
-            user-select: none;
-        }
-        
-        /* 骨架屏样式 */
-        .skeleton {
-            width: 100%;
-            height: 1080px;
-            background-color: rgba(255, 255, 255, 0.2);
-            margin-bottom: 0;
-        }
-        
-        /* 错误提示样式 */
-        .error-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #1C1C1C;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 1000;
-        }
-        
-        .error-message {
-            color: #FFFFFF;
-            font-size: 18px;
-            margin-bottom: 20px;
-        }
-        
-        .reload-button {
-            background-color: rgba(255, 255, 255, 0.2);
-            border: none;
-            width: 96px;
-            height: 36px;
-            color: #FFFFFF;
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .container {
-                width: 100%;
-                padding: 0 10px;
+        // 更新加载指示器
+        function updateLoadingIndicator(show) {
+            if (show === false) {
+                elements.loadingIndicator.style.display = 'none';
+                return;
+            }
+            
+            if (state.totalImagesToLoad > 0) {
+                const processed = state.loadedImages + state.failedImages;
+                const percentage = Math.round((processed / state.totalImagesToLoad) * 100);
+                elements.loadingIndicator.textContent = `加载中... ${percentage}%`;
+                elements.loadingIndicator.style.display = 'block';
             }
         }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="image-container" id="imageContainer"></div>
-    </div>
-    
-    <div class="error-container" id="errorContainer">
-        <div class="error-message">网络异常，请重新加载</div>
-        <button class="reload-button" id="reloadButton">重新加载</button>
-    </div>
-
-    <!-- ⭐ 这是完整嵌入的新优化 JS ⭐ -->
-    <script>
-        const MAX_IMAGES = 50;
-        const IMAGE_PREFIX = 'work';
-        const IMAGE_EXTENSION = '.png';
-        const IMAGES_FOLDER = 'images/';
-
-        const imageContainer = document.getElementById('imageContainer');
-        const errorContainer = document.getElementById('errorContainer');
-        const reloadButton = document.getElementById('reloadButton');
-
-        let firstLoaded = false;
-        let consecutiveErrors = 0;
-        const ERROR_LIMIT = 10; // 连续失败上限
-
-        // 懒加载观察器
-        const observer = new IntersectionObserver(entries => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const skeleton = entry.target;
-                    const index = skeleton.dataset.index;
-                    loadImage(index);
-                    observer.unobserve(skeleton);
+        
+        // 显示错误提示
+        function showError(message) {
+            if (state.hasShownError) return;
+            
+            state.hasShownError = true;
+            const errorMessage = elements.errorContainer.querySelector('.error-message');
+            errorMessage.textContent = message || '网络异常，请重新加载';
+            elements.errorContainer.style.display = 'flex';
+            updateLoadingIndicator(false);
+        }
+        
+        // 隐藏错误提示
+        function hideError() {
+            state.hasShownError = false;
+            elements.errorContainer.style.display = 'none';
+        }
+        
+        // 网络状态处理
+        function handleOnline() {
+            state.isOnline = true;
+            if (state.hasShownError) {
+                hideError();
+                // 重试失败的图片
+                for (let i = 1; i <= CONFIG.MAX_IMAGES; i++) {
+                    if (state.imageStatus[i] && !state.imageStatus[i].loaded) {
+                        loadImage(i);
+                    }
                 }
-            });
-        });
-
-        // 创建骨架屏
-        function createSkeleton(index) {
-            const skeleton = document.createElement('div');
-            skeleton.className = 'skeleton';
-            skeleton.dataset.index = index;
-            observer.observe(skeleton);
-            imageContainer.appendChild(skeleton);
+            }
         }
-
-        // 加载图片
-        function loadImage(i) {
-            const img = new Image();
-            img.src = `${IMAGES_FOLDER}${IMAGE_PREFIX}${i}${IMAGE_EXTENSION}`;
-            img.loading = "lazy";
-
-            img.onload = () => {
-                firstLoaded = true;
-                consecutiveErrors = 0;
-                replaceSkeleton(i, img.src);
-            };
-
-            img.onerror = () => {
-                consecutiveErrors++;
-
-                // 连续失败上限 → 才判断网络问题
-                if (!firstLoaded && consecutiveErrors >= ERROR_LIMIT) {
-                    showError();
-                }
-
-                removeSkeleton(i);
-            };
+        
+        function handleOffline() {
+            state.isOnline = false;
+            if (state.loadedImages === 0 && !state.hasShownError) {
+                showError('网络连接已断开');
+            }
         }
-
-        // 替换骨架屏
-        function replaceSkeleton(index, src) {
-            const skeleton = document.querySelector(`.skeleton[data-index="${index}"]`);
-            if (!skeleton) return;
-
-            const imageItem = document.createElement('div');
-            imageItem.className = 'image-item';
-
-            const img = document.createElement('img');
-            img.src = src;
-            img.alt = `作品 ${index}`;
-            img.loading = "lazy";
-
-            imageItem.appendChild(img);
-            skeleton.replaceWith(imageItem);
-        }
-
-        // 移除骨架屏（图片失败）
-        function removeSkeleton(index) {
-            const skeleton = document.querySelector(`.skeleton[data-index="${index}"]`);
-            if (skeleton) skeleton.remove();
-        }
-
-        function showError() {
-            errorContainer.style.display = 'flex';
-        }
-
+        
         // 初始化
-        function init() {
-            for (let i = 1; i <= MAX_IMAGES; i++) {
-                createSkeleton(i);
-            }
-
-            reloadButton.onclick = () => location.reload();
-
-            document.addEventListener('contextmenu', e => e.preventDefault());
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
         }
-
-        window.onload = init;
     </script>
 </body>
 </html>
