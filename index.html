@@ -20,49 +20,110 @@
   <meta http-equiv="Expires" content="0">
 
   <style>
-    :root { --bg: #1C1C1C; }
+    /* 基础样式 */
+    :root { 
+      --bg: #1C1C1C;
+      --text-color: #fff;
+      --border-color: rgba(255, 255, 255, .1);
+      --card-bg: rgba(255, 255, 255, .08);
+    }
+    
     html, body {
-      height: 100%; margin: 0; background: var(--bg); color: #fff;
-      -webkit-font-smoothing: antialiased; user-select: none;
+      height: 100%; 
+      margin: 0; 
+      background: var(--bg); 
+      color: var(--text-color);
+      -webkit-font-smoothing: antialiased; 
+      user-select: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
     }
 
-    .wrap { padding-top: 60px; min-height: 100vh; }
-    .gallery { width: 100%; max-width: 1200px; margin: 0 auto; }
+    /* 布局容器 */
+    .wrap { 
+      padding-top: 60px; 
+      min-height: 100vh; 
+    }
+    
+    .gallery { 
+      width: 100%; 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
 
+    /* 图片样式 */
     .gallery img {
-      width: 100%; display: block; height: auto;
-      -webkit-user-drag: none; user-drag: none;
+      width: 100%; 
+      display: block; 
+      height: auto;
+      -webkit-user-drag: none; 
+      user-drag: none;
       animation: fadeIn 0.5s ease;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease;
+    }
+    
+    .gallery img:hover {
+      transform: scale(1.01);
     }
 
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeIn { 
+      from { opacity: 0; } 
+      to { opacity: 1; } 
+    }
 
+    /* 加载指示器 */
     .loading-indicator {
-      position: fixed; top: 50%; left: 50%;
+      position: fixed; 
+      top: 50%; 
+      left: 50%;
       transform: translate(-50%, -50%);
-      display: flex; flex-direction: column; align-items: center;
+      display: flex; 
+      flex-direction: column; 
+      align-items: center;
       z-index: 100;
       transition: opacity 0.3s, visibility 0.3s;
     }
-    .loading-indicator.hidden { opacity: 0; visibility: hidden; }
+    
+    .loading-indicator.hidden { 
+      opacity: 0; 
+      visibility: hidden; 
+    }
 
     .spinner {
-      width: 50px; height: 50px;
+      width: 50px; 
+      height: 50px;
       border: 3px solid rgba(255, 255, 255, .1);
       border-top-color: white;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    @keyframes spin { 
+      to { transform: rotate(360deg); } 
+    }
 
-    .loading-text { margin-top: 15px; }
-    .loading-progress { font-size: 14px; opacity: .6; margin-top: 5px; }
+    .loading-text { 
+      margin-top: 15px; 
+      font-size: 16px;
+    }
+    
+    .loading-progress { 
+      font-size: 14px; 
+      opacity: .6; 
+      margin-top: 5px; 
+    }
 
+    /* 骨架屏 */
     .skeleton-item {
-      width: 100%; height: 400px;
+      width: 100%; 
+      height: 400px;
       border-radius: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
       background: linear-gradient(90deg,
         rgba(255,255,255,.05) 25%,
         rgba(255,255,255,.08) 37%,
@@ -77,50 +138,104 @@
       100% { background-position: 0 50%; }
     }
 
+    /* 错误遮罩层 */
     .overlay {
-      position: fixed; inset: 0;
-      display: flex; justify-content: center; align-items: center;
-      background: rgba(0,0,0,.75);
+      position: fixed; 
+      inset: 0;
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      background: rgba(0,0,0,.85);
       backdrop-filter: blur(8px);
-      opacity: 0; visibility: hidden; transition: .3s;
+      opacity: 0; 
+      visibility: hidden; 
+      transition: .3s;
+      z-index: 1000;
     }
-    .overlay.show { opacity: 1; visibility: visible; }
+    
+    .overlay.show { 
+      opacity: 1; 
+      visibility: visible; 
+    }
 
     .card {
-      width: 90%; max-width: 380px;
-      padding: 40px 30px; text-align: center;
-      background: rgba(255,255,255,.08);
+      width: 90%; 
+      max-width: 380px;
+      padding: 40px 30px; 
+      text-align: center;
+      background: var(--card-bg);
       border-radius: 24px;
-      border: 1px solid rgba(255,255,255,.1);
+      border: 1px solid var(--border-color);
     }
 
     .reload-btn {
-      padding: 10px 32px; border-radius: 999px;
-      background: white; color: black; border: none;
-      cursor: pointer; margin-top: 10px;
+      padding: 12px 36px; 
+      border-radius: 999px;
+      background: white; 
+      color: black; 
+      border: none;
+      cursor: pointer; 
+      margin-top: 20px;
       font-weight: 600;
+      font-size: 16px;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    
+    .reload-btn:hover {
+      transform: translateY(-2px);
+      opacity: 0.9;
+    }
+    
+    .reload-btn:active {
+      transform: translateY(0);
     }
 
-    @media (min-width: 900px) { .skeleton-item { height: 500px; } }
+    /* 响应式设计 */
+    @media (min-width: 768px) { 
+      .gallery img {
+        margin-bottom: 40px;
+      }
+      
+      .skeleton-item { 
+        height: 450px; 
+      } 
+    }
+    
+    @media (min-width: 900px) { 
+      .skeleton-item { 
+        height: 500px; 
+      } 
+    }
+    
+    @media (min-width: 1200px) {
+      .gallery {
+        padding: 0;
+      }
+    }
   </style>
 </head>
 
 <body>
+  <!-- 加载指示器 -->
   <div class="loading-indicator" id="loadingIndicator">
     <div class="spinner"></div>
     <div class="loading-text" id="loadingText">正在加载作品...</div>
+    <div class="loading-progress" id="loadingProgress"></div>
   </div>
 
+  <!-- 骨架屏 -->
   <div id="skeletonContainer">
     <div class="skeleton-item"></div>
     <div class="skeleton-item"></div>
     <div class="skeleton-item"></div>
   </div>
 
+  <!-- 主要内容 -->
   <div class="wrap">
     <main class="gallery" id="gallery"></main>
   </div>
 
+  <!-- 错误提示遮罩层 -->
   <div class="overlay" id="overlay">
     <div class="card">
       <h2 id="overlay-msg">加载遇到问题</h2>
@@ -130,50 +245,151 @@
   </div>
 
 <script>
-/* ----------------------------
-   读取 works.json + 分批加载
------------------------------ */
+// ========== 全局变量 ==========
 const gallery = document.getElementById("gallery");
 const skeleton = document.getElementById("skeletonContainer");
 const loading = document.getElementById("loadingIndicator");
+const loadingText = document.getElementById("loadingText");
+const loadingProgress = document.getElementById("loadingProgress");
 const overlay = document.getElementById("overlay");
-document.getElementById("reloadBtn").onclick = () => location.reload();
+const reloadBtn = document.getElementById("reloadBtn");
 
 let works = [];
 let batchSize = 20;
 let currentIndex = 0;
+let isLoading = false;
+let hasMore = true;
 
+// ========== 事件监听 ==========
+reloadBtn.onclick = () => location.reload();
+
+// 滚动事件 - 使用节流优化
+let scrollThrottle = false;
+window.addEventListener("scroll", () => {
+  if (scrollThrottle || !hasMore) return;
+  
+  scrollThrottle = true;
+  
+  // 检查是否滚动到底部附近
+  const scrollPosition = window.innerHeight + window.scrollY;
+  const threshold = document.body.offsetHeight - 400;
+  
+  if (scrollPosition >= threshold) {
+    loadNextBatch();
+  }
+  
+  setTimeout(() => {
+    scrollThrottle = false;
+  }, 150);
+});
+
+// ========== 初始化 ==========
 window.onload = async () => {
   showSkeleton();
-
+  
   try {
+    // 加载作品数据
     const res = await fetch("works.json");
+    
+    if (!res.ok) {
+      throw new Error(`HTTP错误: ${res.status}`);
+    }
+    
     works = await res.json();
-
-    hideLoading();
-    hideSkeleton();
-    loadNextBatch();
-
+    
+    // 更新加载进度
+    loadingText.textContent = `正在加载作品...`;
+    loadingProgress.textContent = `找到 ${works.length} 个作品`;
+    
+    // 延迟隐藏加载指示器，让用户看到进度信息
+    setTimeout(() => {
+      hideLoading();
+      hideSkeleton();
+      
+      // 加载第一批作品
+      if (works.length > 0) {
+        loadNextBatch();
+      } else {
+        loadingText.textContent = "暂无作品";
+        hideLoading();
+      }
+    }, 800);
+    
   } catch (err) {
-    console.error(err);
+    console.error("加载失败:", err);
     showError();
   }
 };
 
+// ========== 核心功能函数 ==========
 function loadNextBatch() {
-  const slice = works.slice(currentIndex, currentIndex + batchSize);
-  slice.forEach(name => {
+  if (isLoading || !hasMore) return;
+  
+  isLoading = true;
+  
+  const remaining = works.length - currentIndex;
+  const loadCount = Math.min(batchSize, remaining);
+  const batch = works.slice(currentIndex, currentIndex + loadCount);
+  
+  if (batch.length === 0) {
+    hasMore = false;
+    
+    // 所有作品加载完成
+    if (currentIndex > 0) {
+      setTimeout(() => {
+        const completionMsg = document.createElement('div');
+        completionMsg.className = 'loading-text';
+        completionMsg.style.textAlign = 'center';
+        completionMsg.style.padding = '40px 0';
+        completionMsg.style.opacity = '0.6';
+        completionMsg.textContent = '已经到底了';
+        gallery.appendChild(completionMsg);
+      }, 300);
+    }
+    
+    isLoading = false;
+    return;
+  }
+  
+  // 批量创建图片元素
+  const fragment = document.createDocumentFragment();
+  
+  batch.forEach((imagePath, index) => {
     const img = document.createElement("img");
-    // 修正图片路径，移除重复的images/前缀
-    img.src = name;
-    gallery.appendChild(img);
+    img.src = imagePath;
+    img.alt = `作品 ${currentIndex + index + 1}`;
+    img.loading = "lazy"; // 原生懒加载
+    
+    // 图片加载错误处理
+    img.onerror = () => {
+      console.warn(`图片加载失败: ${imagePath}`);
+      img.style.opacity = '0.5';
+      img.style.filter = 'grayscale(100%)';
+    };
+    
+    fragment.appendChild(img);
   });
-
-  currentIndex += batchSize;
+  
+  gallery.appendChild(fragment);
+  currentIndex += loadCount;
+  
+  // 更新进度
+  if (loadingProgress) {
+    const progress = Math.min(100, Math.round((currentIndex / works.length) * 100));
+    loadingProgress.textContent = `已加载 ${currentIndex} / ${works.length} (${progress}%)`;
+  }
+  
+  isLoading = false;
+  
+  // 检查是否还有更多
+  hasMore = currentIndex < works.length;
 }
 
+// ========== UI控制函数 ==========
 function showSkeleton() {
-  [...skeleton.children].forEach(el => (el.style.display = "block"));
+  Array.from(skeleton.children).forEach(el => {
+    el.style.display = "block";
+  });
 }
 
 function hideSkeleton() {
@@ -190,15 +406,18 @@ function showError() {
   overlay.classList.add("show");
 }
 
-let scrollTimer;
-window.addEventListener("scroll", () => {
-  clearTimeout(scrollTimer);
-  scrollTimer = setTimeout(() => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 400) {
-      loadNextBatch();
-    }
-  }, 150);
-});
+// ========== 辅助函数 ==========
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
 </script>
 
 </body>
